@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"math/rand"
 	"os"
-	"strconv"
 	"time"
 
 	"github.com/jmoiron/sqlx"
@@ -100,10 +99,11 @@ func updateDB(table string, payload *dbData, factor int) {
 
 func main() {
 	//parse command line
+	var table string
+	var dictSize int
+	flag.StringVar(&table, "table", "english_idioms", "table in quizes database, schema public")
+	flag.IntVar(&dictSize, "number", 20, "number of questions to answer")
 	flag.Parse()
-	table := flag.Arg(0)
-	dictSize, _ := strconv.Atoi(flag.Arg(1))
-
 	//get data
 	payload := getDB(table)
 	//shuffle data
