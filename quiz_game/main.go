@@ -58,35 +58,27 @@ func getDB(table string) []*dbData {
 									,last_date
 									,next_date 
 									from public.%s 
-									where times=1 or next_date<='%s'`,
+									where times='1' or next_date<='%s'`,
 		table, time.Now().Format("2006-01-02 15:04:05"))
 	err = db.Select(&result, sql_query)
 	return result
 }
 
 func updateDB(table string, payload *dbData, factor int) {
-	var result dbData
 	dbPass := os.Getenv("db_pass")
 	db, err := sqlx.Connect("postgres", fmt.Sprintf("postgresql://localhost/quizes?user=postgres&password=%s&sslmode=disable", dbPass))
 	if err != nil {
 		fmt.Println("error:", err)
 		return
 	}
-
-	err = db.Get(&result, fmt.Sprintf(`select question
-						,answer
-						,times
-						,last_date
-						,next_date 
-						from public.%s 
-						where question=%s`, table, payload.Question))
+	newPayloadTimesInt := payload.Times
 
 	if factor == 1 {
-		payload.Times = payload.Times * 2
+		newPayloadTimesInt = newPayloadTimesInt * 2
 	} else if factor == 2 {
-		payload.Times = int64(float64(payload.Times) * 1.5)
+		newPayloadTimesInt = int64(float64(newPayloadTimesInt) * 1.5)
 	} else {
-		payload.Times = 1
+		newPayloadTimesInt = 1
 	}
 
 	db.MustExec(fmt.Sprintf(`
@@ -94,7 +86,7 @@ func updateDB(table string, payload *dbData, factor int) {
 			set times=%v
 			,last_date=current_date
 			,next_date=current_date+ interval '%v' day
-		where question='%s'`, table, payload.Times, payload.Times, payload.Question))
+		where question='%s'`, table, newPayloadTimesInt, newPayloadTimesInt, payload.Question))
 }
 
 func main() {
@@ -113,6 +105,11 @@ func main() {
 	//create arrays for swapping
 	start_questions := make([]*dbData, 0)
 	answered_questions := make([]string, 0)
+	erroneous_questions := make([]string, 0)
+
+	if dictSize > len(payload) {
+		dictSize = len(payload)
+	}
 	for _, row := range payload[:dictSize] {
 		start_questions = append(start_questions, row)
 	}
@@ -137,6 +134,7 @@ func main() {
 				payload := dbData{
 					Question: turn.Question,
 					Answer:   turn.Answer,
+					Times:    turn.Times,
 					LastDate: turn.LastDate,
 					NextDate: turn.NextDate,
 				}
@@ -145,22 +143,26 @@ func main() {
 					if userAnswer == turn.Answer {
 						fmt.Println("Correct!")
 						right++
-						if time.Since(start) > time.Second*normalAnswerTime {
-							factor = 2
+						if _, ok := Find(erroneous_questions, turn.Question); !ok {
+							if time.Since(start) > time.Second*normalAnswerTime {
+								factor = 2
 
+							} else {
+								factor = 1
+							}
 						} else {
-							factor = 1
+							factor = 3
 						}
 						updateDB(table, &payload, factor)
 						answered_questions = append(answered_questions, turn.Question)
 					} else {
 						fmt.Println("Wrong! your answer is:", userAnswer, ", right is: ", turn.Answer)
 						wrong++
-						factor = 3
-						updateDB(table, &payload, factor)
+						erroneous_questions = append(erroneous_questions, turn.Question)
 					}
 				case <-time.After(maxAnswerTime * time.Second):
 					fmt.Println("\n Time is over!")
+					fmt.Println("right is: ", turn.Answer)
 				}
 
 			}
