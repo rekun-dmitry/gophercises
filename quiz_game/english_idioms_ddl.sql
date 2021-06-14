@@ -1,5 +1,5 @@
-drop table if exists quiz.english_idioms;
-create table quiz.english_idioms
+drop table if exists public.english_idioms;
+create table public.english_idioms
 (question varchar(2000),
 answer varchar(2000),
 times integer,
