@@ -13,8 +13,8 @@ import (
 )
 
 const (
-	normalAnswerTime = 10
-	maxAnswerTime    = 15
+	normalAnswerTime = 15
+	maxAnswerTime    = 25
 )
 
 type dbData struct {
@@ -76,7 +76,7 @@ func updateDB(table string, payload *dbData, factor int) {
 	if factor == 1 {
 		newPayloadTimesInt = newPayloadTimesInt * 2
 	} else if factor == 2 {
-		newPayloadTimesInt = int64(float64(newPayloadTimesInt) * 1.5)
+		newPayloadTimesInt = int64(float64(newPayloadTimesInt) * 1.6)
 	} else {
 		newPayloadTimesInt = 1
 	}
