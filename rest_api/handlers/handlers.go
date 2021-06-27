@@ -6,60 +6,60 @@ import (
 	"log"
 	"mime"
 	"net/http"
-	"rest_api/server"
-	"time"
+	"rest_api/provinces"
+	"strconv"
+	"strings"
 )
 
-type Server server.Server
+type Server struct {
+	store *provinces.ProvinceStore
+}
 
-func (ts *Server) provinceHandler(w http.ResponseWriter, req *http.Request) {
-	if req.URL.Path == "/province/" {
+func NewServer() *Server {
+	store := provinces.New()
+	return &Server{store: store}
+}
+
+func (ps *Server) EconomicProvinceHandler(w http.ResponseWriter, req *http.Request) {
+	if req.URL.Path == "/province/economic/" {
 		// Request is plain "/province/", without trailing ID.
 		if req.Method == http.MethodPost {
-			ts.createProvinceHandler(w, req)
-			/*} else if req.Method == http.MethodGet {
-				ts.getAllProvincesHandler(w, req)
-			} else if req.Method == http.MethodDelete {
-				ts.deleteAllProvincesHandler(w, req)*/
+			ps.createProvinceHandler(w, req)
+		} else if req.Method == http.MethodGet {
+			ps.getAllProvincesHandler(w, req)
+		} else if req.Method == http.MethodDelete {
+			ps.deleteAllProvincesHandler(w, req)
 		} else {
-			http.Error(w, fmt.Sprintf("expect method GET, DELETE or POST at /province/, got %v", req.Method), http.StatusMethodNotAllowed)
+			http.Error(w, fmt.Sprintf("expect method GET, DELETE or POST at /province/economic/, got %v", req.Method), http.StatusMethodNotAllowed)
 			return
 		}
-	} else { /*
-			// Request has an ID, as in "/province/<id>".
-			path := strings.Trim(req.URL.Path, "/")
-			pathParts := strings.Split(path, "/")
-			if len(pathParts) < 2 {
-				http.Error(w, "expect /province/<id> in province handler", http.StatusBadRequest)
-				return
-			}
-			id, err := strconv.Atoi(pathParts[1])
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusBadRequest)
-				return
-			}
+	} else {
+		// Request has an ID, as in "/province/<id>".
+		path := strings.Trim(req.URL.Path, "/")
+		pathParts := strings.Split(path, "/")
+		if len(pathParts) < 3 {
+			http.Error(w, "expect /province/economic/<id> in province handler", http.StatusBadRequest)
+			return
+		}
+		id, err := strconv.Atoi(pathParts[2])
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
 
-			if req.Method == http.MethodDelete {
-				ts.deleteProvinceHandler(w, req, int(id))
-			} else if req.Method == http.MethodGet {
-				ts.getProvinceHandler(w, req, int(id))
-			} else { */
-		http.Error(w, fmt.Sprintf("expect method GET or DELETE at /task/<id>, got %v", req.Method), http.StatusMethodNotAllowed)
-		return
-		//}
+		if req.Method == http.MethodDelete {
+			ps.deleteProvinceHandler(w, req, int(id))
+		} else if req.Method == http.MethodGet {
+			ps.getProvinceHandler(w, req, int(id))
+		} else {
+			http.Error(w, fmt.Sprintf("expect method GET or DELETE at /province/<id>, got %v", req.Method), http.StatusMethodNotAllowed)
+			return
+		}
 	}
 }
 
 func (ts *Server) createProvinceHandler(w http.ResponseWriter, req *http.Request) {
 	log.Printf("handling province create at %s\n", req.URL.Path)
-
-	// Types used internally in this handler to (de-)serialize the request and
-	// response from/to JSON.
-	type RequestTask struct {
-		Text string    `json:"text"`
-		Tags []string  `json:"tags"`
-		Due  time.Time `json:"due"`
-	}
 
 	type ResponseId struct {
 		Id int `json:"id"`
@@ -79,13 +79,13 @@ func (ts *Server) createProvinceHandler(w http.ResponseWriter, req *http.Request
 
 	dec := json.NewDecoder(req.Body)
 	dec.DisallowUnknownFields()
-	var rt RequestTask
+	var rt provinces.Province
 	if err := dec.Decode(&rt); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	id := ts.store.CreateTask(rt.Text, rt.Tags, rt.Due)
+	id := ts.store.CreateProvince(rt)
 	js, err := json.Marshal(ResponseId{Id: id})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -93,4 +93,49 @@ func (ts *Server) createProvinceHandler(w http.ResponseWriter, req *http.Request
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(js)
+}
+
+func (ts *Server) getAllProvincesHandler(w http.ResponseWriter, req *http.Request) {
+	log.Printf("handling get all provinces at %s\n", req.URL.Path)
+
+	allProvinces := ts.store.GetAllProvinces()
+	js, err := json.Marshal(allProvinces)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(js)
+}
+
+func (ps *Server) deleteAllProvincesHandler(w http.ResponseWriter, req *http.Request) {
+	log.Printf("handling delete all provinces at %s\n", req.URL.Path)
+	ps.store.DeleteAllProvinces()
+}
+
+func (ps *Server) getProvinceHandler(w http.ResponseWriter, req *http.Request, id int) {
+	log.Printf("handling get province at %s\n", req.URL.Path)
+
+	province, err := ps.store.GetProvince(id)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return
+	}
+
+	js, err := json.Marshal(province)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(js)
+}
+
+func (ps *Server) deleteProvinceHandler(w http.ResponseWriter, req *http.Request, id int) {
+	log.Printf("handling delete province at %s\n", req.URL.Path)
+
+	err := ps.store.DeleteProvince(id)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusNotFound)
+	}
 }
