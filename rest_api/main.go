@@ -19,10 +19,7 @@ func NewServer() *Server {
 }
 
 /*TO DO
-add geographical and political handling
 add autentification
-add YAML
-add JSON
 add BoltDB
 add flag
 add middleware
@@ -37,7 +34,16 @@ func main() {
 	server := handlers.NewServer()
 	mux.HandleFunc("/province/economic/", server.EconomicProvinceHandler)
 	mapHandler := redirector.MapHandler(pathsToUrls, mux)
-	log.Fatal(http.ListenAndServe("localhost:8088", mapHandler))
+	yml := `
+    - path: /province/
+      url: /province/economic/
+    `
+	yamlHandler, err := redirector.YAMLHandler([]byte(yml), mapHandler)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println("Starting the server on :8088")
+	log.Fatal(http.ListenAndServe("localhost:8088", yamlHandler))
 }
 
 func defaultMux() *http.ServeMux {

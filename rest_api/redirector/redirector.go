@@ -4,6 +4,8 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+
+	"gopkg.in/yaml.v2"
 )
 
 // MapHandler redirects links and presumes that a link has a number as its second part
@@ -35,4 +37,22 @@ func MapHandler(pathsToUrls map[string]string, fallback http.Handler) http.Handl
 		}
 		fallback.ServeHTTP(w, r)
 	}
+}
+
+func YAMLHandler(yml []byte, fallback http.Handler) (http.HandlerFunc, error) {
+	var pathUrls []pathUrl
+	err := yaml.Unmarshal(yml, &pathUrls)
+	if err != nil {
+		return nil, err
+	}
+	pathsToUrls := make(map[string]string)
+	for _, pu := range pathUrls {
+		pathsToUrls[pu.Path] = pu.Url
+	}
+	return MapHandler(pathsToUrls, fallback), nil
+}
+
+type pathUrl struct {
+	Path string `yaml:"path"`
+	Url  string `yaml:"url"`
 }
