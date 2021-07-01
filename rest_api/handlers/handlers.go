@@ -6,6 +6,7 @@ import (
 	"log"
 	"mime"
 	"net/http"
+	"rest_api/auth"
 	"rest_api/provinces"
 	"strconv"
 	"strings"
@@ -24,11 +25,23 @@ func (ps *Server) EconomicProvinceHandler(w http.ResponseWriter, req *http.Reque
 	if req.URL.Path == "/province/economic/" {
 		// Request is plain "/province/", without trailing ID.
 		if req.Method == http.MethodPost {
-			ps.createProvinceHandler(w, req)
+			user, pass, ok := req.BasicAuth()
+			if ok && auth.VerifyUserPass(user, pass) {
+				ps.createProvinceHandler(w, req)
+			} else {
+				w.Header().Set("WWW-Authenticate", `Basic realm="api"`)
+				http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			}
 		} else if req.Method == http.MethodGet {
 			ps.getAllProvincesHandler(w, req)
 		} else if req.Method == http.MethodDelete {
-			ps.deleteAllProvincesHandler(w, req)
+			user, pass, ok := req.BasicAuth()
+			if ok && auth.VerifyUserPass(user, pass) {
+				ps.deleteAllProvincesHandler(w, req)
+			} else {
+				w.Header().Set("WWW-Authenticate", `Basic realm="api"`)
+				http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			}
 		} else {
 			http.Error(w, fmt.Sprintf("expect method GET, DELETE or POST at /province/economic/, got %v", req.Method), http.StatusMethodNotAllowed)
 			return
@@ -48,7 +61,13 @@ func (ps *Server) EconomicProvinceHandler(w http.ResponseWriter, req *http.Reque
 		}
 
 		if req.Method == http.MethodDelete {
-			ps.deleteProvinceHandler(w, req, int(id))
+			user, pass, ok := req.BasicAuth()
+			if ok && auth.VerifyUserPass(user, pass) {
+				ps.deleteProvinceHandler(w, req, int(id))
+			} else {
+				w.Header().Set("WWW-Authenticate", `Basic realm="api"`)
+				http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			}
 		} else if req.Method == http.MethodGet {
 			ps.getProvinceHandler(w, req, int(id))
 		} else {
