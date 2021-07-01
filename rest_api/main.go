@@ -41,6 +41,7 @@ func main() {
 	addr := flag.String("port", ":4001", "port server running")
 	certFile := flag.String("cert", "cert.pem", "cert file")
 	keyFile := flag.String("key", "key.pem", "key.pem file")
+	yml := flag.String("yml", "provinces.yml", "path to yaml file with redirection instructions")
 
 	mux := defaultMux()
 	pathsToUrls := map[string]string{
@@ -49,11 +50,7 @@ func main() {
 	server := handlers.NewServer()
 	mux.HandleFunc("/province/economic/", server.EconomicProvinceHandler)
 	mapHandler := redirector.MapHandler(pathsToUrls, mux)
-	yml := `
-    - path: /province/
-      url: /province/economic/
-    `
-	yamlHandler, err := redirector.YAMLHandler([]byte(yml), mapHandler)
+	yamlHandler, err := redirector.YAMLHandler(*yml, mapHandler)
 	if err != nil {
 		panic(err)
 	}

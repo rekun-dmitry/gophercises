@@ -1,6 +1,8 @@
 package redirector
 
 import (
+	"io/ioutil"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -39,9 +41,13 @@ func MapHandler(pathsToUrls map[string]string, fallback http.Handler) http.Handl
 	}
 }
 
-func YAMLHandler(yml []byte, fallback http.Handler) (http.HandlerFunc, error) {
+func YAMLHandler(ymlPath string, fallback http.Handler) (http.HandlerFunc, error) {
 	var pathUrls []pathUrl
-	err := yaml.Unmarshal(yml, &pathUrls)
+	yml, err := ioutil.ReadFile(ymlPath)
+	if err != nil {
+		log.Printf("yamlFile.Get err   #%v ", err)
+	}
+	err = yaml.Unmarshal(yml, &pathUrls)
 	if err != nil {
 		return nil, err
 	}
