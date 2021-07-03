@@ -28,8 +28,6 @@ var (
 )
 
 /*TO DO
-add flags to yaml file,to certs and https port
-add Swagger
 add middleware
 add GraphQL
 */

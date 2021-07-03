@@ -1,0 +1,97 @@
+# Hand-written OpenAPI (v3) spec for REST server.
+#
+#
+# This code is in the public domain.
+openapi: 3.0.1
+info:
+  title: Sample REST server
+  description: TODO
+  version: 1.0.0
+servers:
+- url: https://localhost:4001
+paths:
+  /province/economic/:
+    get:
+      summary: Returns a list of all provinces
+      responses:
+        '200':
+          description: A JSON array of province IDs
+          content:
+            application/json:
+              schema: 
+                type: array
+                items: 
+                  $ref: '#/components/schemas/Province'
+    post:
+      summary: Create a province
+      requestBody:
+        description: Province to be added to the store
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                text:
+                  type: string
+      responses:
+          '200':
+            description: ID of created province
+            content:
+              application/json:
+                schema:
+                  type: integer
+  /province/economic/{id}:
+    get:
+      summary: Get province with specific id
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+          description: The province ID
+      responses:
+        '200':
+          description: Province with given id
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Province'
+    delete:
+      summary: Delete province with specific id
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+          description: The province ID
+      responses:
+        '200':
+          description: Province with given id deleted
+          content: {}
+components:
+  schemas:
+    Province:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        admin_dev:
+          type: integer
+        dip_dev:
+          type: integer
+        mil_dev:
+          type: integer  
+        trade_good:
+          type: string 
+        trade_node:
+          type: string   
+        modifiers:
+          type: array
+          items: 
+            type: string
