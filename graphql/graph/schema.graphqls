@@ -1,0 +1,46 @@
+# GraphQL schema for our province server.
+#
+type Query {
+    getAllProvinces: [Province]
+    getProvince(id: ID!): Province
+}
+
+type Mutation {
+    createProvince(input: NewProvince!): Province!
+
+    deleteProvince(id: ID!): Boolean
+    deleteAllProvinces: Boolean
+}
+
+type Modifier {
+    Name: String!
+    Contents: String!
+}
+
+type Province {
+    Id: ID!
+    Name: String!
+    AdmDev: Int!      
+    DipDev: Int!     
+    MilDev: Int!      
+    TradeGood: String!   
+    TradeNode: String!   
+    Modifiers: [Modifier!]
+
+}
+
+input NewModifier {
+    Name: String!
+    Contents: String!
+}
+
+input NewProvince {
+    Id: ID!
+    Name: String!
+    AdmDev:    Int!      
+    DipDev:    Int!     
+    MilDev:    Int!      
+    TradeGood: String!   
+    TradeNode: String!   
+    Modifiers: [NewModifier!]
+}

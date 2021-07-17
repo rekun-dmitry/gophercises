@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"rest_api/auth"
 	"rest_api/handlers"
+	"rest_api/middleware"
 	"rest_api/provinces"
 	"rest_api/redirector"
 
@@ -28,7 +29,6 @@ var (
 )
 
 /*TO DO
-add middleware
 add GraphQL
 */
 
@@ -47,7 +47,10 @@ func main() {
 	}
 	server := handlers.NewServer()
 	mux.HandleFunc("/province/economic/", server.EconomicProvinceHandler)
-	mapHandler := redirector.MapHandler(pathsToUrls, mux)
+
+	midHandler := middleware.Logging(mux)
+	midHandler = middleware.PanicRecovery(midHandler)
+	mapHandler := redirector.MapHandler(pathsToUrls, midHandler)
 	yamlHandler, err := redirector.YAMLHandler(*yml, mapHandler)
 	if err != nil {
 		panic(err)
